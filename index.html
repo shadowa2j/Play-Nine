@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Play Nine</title>
+  <meta name="description" content="Play Nine card game scorekeeper">
+  <meta name="theme-color" content="#1a3d2b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Play Nine">
+  <link id="pwa-manifest" rel="manifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --felt:    #1a3d2b;
+      --felt-dk: #0f2419;
+      --felt-lt: #24573d;
+      --gold:    #c9a227;
+      --gold-lt: #e8c547;
+      --cream:   #f5f0e4;
+      --paper:   #fdfbf5;
+      --ink:     #1a1a1a;
+      --muted:   #7a7060;
+      --red:     #8b2020;
+      --blue:    #1b4a7a;
+      --r:       14px;
+      --shadow:  0 4px 20px rgba(0,0,0,0.18);
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'DM Sans', -apple-system, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--felt);
+      min-height: 100dvh;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      overscroll-behavior: none;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(201,162,39,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(201,162,39,0.04) 0%, transparent 50%);
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    .hdr {
+      background: var(--felt-dk);
+      border-bottom: 2px solid var(--gold);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .hdr-title {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--gold-lt);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.5px;
+    }
+    .hdr-title .flag { font-size: 1.2rem; }
+    .hdr-action { display: flex; gap: 8px; }
+    .hdr-btn {
+      background: rgba(201,162,39,0.15);
+      border: 1px solid rgba(201,162,39,0.4);
+      color: var(--gold-lt);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-body);
+      letter-spacing: 0.3px;
+    }
+    .hdr-btn:active { background: rgba(201,162,39,0.3); }
+
+    /* ── SCROLL AREA ─────────────────────────────── */
+    #app {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .view { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── CARD ────────────────────────────────────── */
+    .card {
+      background: var(--paper);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-body { padding: 16px; }
+    .card-header {
+      background: var(--felt-dk);
+      border-bottom: 2px solid var(--gold);
+      padding: 10px 16px;
+      color: var(--gold-lt);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── BUTTONS ─────────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-body);
+      letter-spacing: 0.3px;
+      transition: filter 0.12s, transform 0.1s;
+      width: 100%;
+    }
+    .btn:active { transform: scale(0.97); filter: brightness(0.9); }
+    .btn-gold    { background: var(--gold); color: var(--felt-dk); }
+    .btn-green   { background: var(--felt-lt); color: #fff; }
+    .btn-outline { background: transparent; color: var(--felt); border: 2px solid var(--felt-lt); }
+    .btn-ghost   { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.15); }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-sm { padding: 10px 16px; font-size: 0.85rem; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── HOME SCREEN ─────────────────────────────── */
+    .home-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 24px;
+      text-align: center;
+      gap: 6px;
+    }
+    .home-hero .emblem {
+      font-size: 4.5rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+      margin-bottom: 8px;
+    }
+    .home-hero h1 {
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      color: var(--gold-lt);
+      line-height: 1;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+    .home-hero p {
+      color: rgba(255,255,255,0.45);
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .home-buttons {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .divider {
+      color: rgba(255,255,255,0.25);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    /* ── HISTORY SCREEN ─────────────────────────── */
+    .h2h-banner {
+      background: linear-gradient(135deg, var(--felt-dk) 0%, var(--felt-lt) 100%);
+      border: 2px solid var(--gold);
+      border-radius: var(--r);
+      padding: 18px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      box-shadow: var(--shadow);
+    }
+    .h2h-player { text-align: center; flex: 1; }
+    .h2h-name {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+    }
+    .h2h-wins {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      color: var(--gold-lt);
+      line-height: 1;
+    }
+    .h2h-wins.leader { color: #fff; text-shadow: 0 0 20px rgba(201,162,39,0.6); }
+    .h2h-divider {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.25);
+      padding: 0 10px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-box {
+      background: var(--paper);
+      border-radius: 12px;
+      padding: 14px 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat-val {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--felt-dk);
+      line-height: 1;
+    }
+    .stat-sub { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+    .streak-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--gold);
+      color: var(--felt-dk);
+      border-radius: 99px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .game-list { display: flex; flex-direction: column; }
+    .game-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      border-bottom: 1px solid #ede8dc;
+    }
+    .game-row:last-child { border-bottom: none; }
+    .game-date { font-size: 0.72rem; color: var(--muted); min-width: 56px; flex-shrink: 0; }
+    .game-players { flex: 1; font-size: 0.85rem; }
+    .game-winner { font-weight: 700; color: var(--felt-dk); }
+    .game-scores { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+    .game-trophy { font-size: 1rem; flex-shrink: 0; }
+    .empty-history {
+      text-align: center;
+      padding: 32px 20px;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.9rem;
+    }
+    .empty-history .big { font-size: 3rem; margin-bottom: 10px; }
+
+    /* ── SETUP SCREEN ────────────────────────────── */
+    .count-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .cnt-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid var(--felt-lt);
+      background: transparent;
+      font-size: 1.6rem;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--felt-dk);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+    }
+    .cnt-btn:active { background: var(--felt-lt); color: white; }
+    .cnt-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+    .cnt-num {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--felt-dk);
+      min-width: 44px;
+      text-align: center;
+    }
+    .name-rows { display: flex; flex-direction: column; gap: 10px; }
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: white;
+      flex-shrink: 0;
+    }
+    .name-input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 2px solid #e0d9cc;
+      border-radius: 9px;
+      font-size: 1rem;
+      font-family: var(--font-body);
+      background: var(--cream);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-input:focus { border-color: var(--felt-lt); }
+
+    /* ── HOLE HEADER ─────────────────────────────── */
+    .hole-hdr {
+      background: var(--felt-dk);
+      border: 2px solid var(--gold);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow);
+    }
+    .hole-num {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      color: var(--gold-lt);
+      line-height: 1;
+    }
+    .hole-sub {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 2px;
+    }
+    .hole-dots {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      transition: background 0.25s;
+    }
+    .dot.done { background: var(--gold); }
+    .dot.now  { background: white; box-shadow: 0 0 6px rgba(255,255,255,0.5); }
+
+    /* ── PLAYER SCORE ROWS ───────────────────────── */
+    .player-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #ede8dc;
+    }
+    .player-row:last-child { border-bottom: none; }
+    .player-meta { flex: 1; min-width: 0; }
+    .player-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-running {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .leader-pip {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--felt-dk);
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .step-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--felt-lt);
+      background: transparent;
+      font-size: 1.4rem;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--felt-dk);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      flex-shrink: 0;
+      font-family: var(--font-body);
+    }
+    .step-btn:active { background: var(--felt-lt); color: white; transform: scale(0.92); }
+    .score-val {
+      width: 50px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      border: 2px solid #e0d9cc;
+      border-radius: 8px;
+      padding: 4px 2px;
+      background: var(--cream);
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .score-val::-webkit-inner-spin-button,
+    .score-val::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .score-val:focus { border-color: var(--felt-lt); }
+
+    /* ── SCORECARD TABLE ─────────────────────────── */
+    .sc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .sc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .sc-table th {
+      background: var(--felt-dk);
+      color: var(--gold-lt);
+      padding: 9px 10px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .sc-table th:first-child { text-align: left; }
+    .sc-table td {
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid #ede8dc;
+      color: var(--ink);
+    }
+    .sc-table td:first-child {
+      text-align: left;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+    .sc-table tr:nth-child(even) td { background: var(--cream); }
+    .sc-table .totals-row td {
+      background: var(--felt-dk) !important;
+      color: var(--gold-lt) !important;
+      font-weight: 700;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      border-bottom: none;
+    }
+    .sc-table .totals-row td:first-child { color: rgba(255,255,255,0.5) !important; }
+    .no-score { color: #ccc !important; font-weight: 400 !important; }
+    .win-col { color: var(--gold) !important; font-weight: 800 !important; }
+
+    /* ── FINAL SCREEN ────────────────────────────── */
+    .winner-banner {
+      background: linear-gradient(145deg, var(--felt-dk), var(--felt-lt));
+      border: 2px solid var(--gold);
+      border-radius: var(--r);
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .winner-trophy { font-size: 3.5rem; line-height: 1; margin-bottom: 10px; }
+    .winner-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 4px;
+    }
+    .winner-name {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      color: var(--gold-lt);
+      line-height: 1;
+    }
+    .winner-score { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin-top: 6px; }
+
+    .standings { display: flex; flex-direction: column; gap: 0; }
+    .standing-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #ede8dc;
+    }
+    .standing-row:last-child { border-bottom: none; }
+    .standing-rank { font-size: 1.3rem; width: 30px; text-align: center; flex-shrink: 0; }
+    .standing-name { flex: 1; font-weight: 700; }
+    .standing-name.first { font-family: var(--font-display); font-size: 1.05rem; color: var(--felt-dk); }
+    .standing-total { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--muted); }
+    .standing-total.first { color: var(--felt-dk); }
+
+    /* ── MODAL ───────────────────────────────────── */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 16px;
+    }
+    .modal-box {
+      background: var(--paper);
+      border-radius: var(--r) var(--r) var(--r) var(--r);
+      max-height: 80dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 -4px 30px rgba(0,0,0,0.4);
+    }
+    .modal-head {
+      background: var(--felt-dk);
+      border-bottom: 2px solid var(--gold);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-family: var(--font-display);
+      color: var(--gold-lt);
+      font-size: 1rem;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+    }
+    .modal-scroll { overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
+
+    /* ── INSTALL BANNER ──────────────────────────── */
+    #install-banner {
+      background: var(--gold);
+      color: var(--felt-dk);
+      padding: 10px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    #install-banner.show { display: flex; }
+    #install-banner button {
+      background: var(--felt-dk);
+      color: var(--gold-lt);
+      border: none;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: var(--font-body);
+    }
+
+    /* ── UTIL ────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+
+    /* Avatar palette */
+    .av0 { background: #1a5c3a; }
+    .av1 { background: #1b4a7a; }
+    .av2 { background: #6b2d8b; }
+    .av3 { background: #8b2020; }
+    .av4 { background: #8b5a00; }
+    .av5 { background: #1a5c5c; }
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-title"><span class="flag">⛳</span> Play Nine</div>
+  <div class="hdr-action" id="hdr-action"></div>
+</header>
+
+<div id="install-banner">
+  <span>📲 Install for offline play</span>
+  <button onclick="doInstall()">Install App</button>
+</div>
+
+<div id="app"></div>
+
+<!-- Scorecard Modal -->
+<div id="sc-modal" class="modal-bg hidden" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title">Full Scorecard</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-scroll">
+      <div class="sc-wrap">
+        <table class="sc-table" id="sc-table-data"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let G = {
+  players: [],      // [{name, scores:[null×9]}]
+  hole: 0,          // 0-indexed current hole
+  phase: 'home',    // home|setup|scoring|final
+  active: false
+};
+
+let HI = [];        // current hole inputs (numbers)
+
+// Setup ephemeral state
+let setupCount = 2;
+let setupNames = ['Stacy','Bryan','Player 3','Player 4','Player 5','Player 6'];
+
+// ═══════════════════════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════════════════════
+function save() {
+  try { localStorage.setItem('pn_v2', JSON.stringify(G)); } catch(e){}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('pn_v2'));
+    if (d && d.players && d.players.length) { G = d; return true; }
+  } catch(e){}
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY PERSISTENCE
+// ═══════════════════════════════════════════════
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('pn_history')) || []; } catch(e) { return []; }
+}
+function saveHistory(hist) {
+  try { localStorage.setItem('pn_history', JSON.stringify(hist)); } catch(e) {}
+}
+function isSvB(players) {
+  if (players.length !== 2) return false;
+  const names = players.map(p => p.name.trim().toLowerCase());
+  return names.includes('stacy') && names.includes('bryan');
+}
+function addGameToHistory() {
+  const hist = loadHistory();
+  const players = G.players.map((p, i) => ({ name: p.name, total: grandTotal(i) }));
+  const sorted  = [...players].sort((a,b) => a.total - b.total);
+  hist.unshift({
+    date:     new Date().toISOString(),
+    players,
+    winner:   sorted[0].name,
+    svb:      isSvB(players)
+  });
+  saveHistory(hist.slice(0, 50)); // keep last 50 games
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function runningTotal(pi, upTo) {
+  let t = 0;
+  for (let h = 0; h < upTo; h++) {
+    const s = G.players[pi].scores[h];
+    if (s !== null && s !== undefined) t += s;
+  }
+  return t;
+}
+function grandTotal(pi) {
+  return G.players[pi].scores.reduce((a,s) => a + (s ?? 0), 0);
+}
+function leaderIdx() {
+  if (G.hole === 0) return -1;
+  let best = Infinity, idx = 0;
+  G.players.forEach((p, i) => {
+    const t = runningTotal(i, G.hole);
+    if (t < best) { best = t; idx = i; }
+  });
+  return idx;
+}
+function finalWinner() {
+  let best = Infinity, idx = 0;
+  G.players.forEach((p, i) => {
+    const t = grandTotal(i);
+    if (t < best) { best = t; idx = i; }
+  });
+  return { idx, score: best, name: G.players[idx].name };
+}
+function playerColors() {
+  return ['av0','av1','av2','av3','av4','av5'];
+}
+function initHoleInputs() {
+  HI = G.players.map((p, i) => {
+    const s = p.scores[G.hole];
+    return (s !== null && s !== undefined) ? s : 0;
+  });
+}
+function readInputsFromDOM() {
+  G.players.forEach((_, i) => {
+    const el = document.getElementById('si_'+i);
+    if (el) HI[i] = parseInt(el.value) || 0;
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER ENGINE
+// ═══════════════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+  const hdrAct = document.getElementById('hdr-action');
+  app.innerHTML = '';
+  hdrAct.innerHTML = '';
+
+  const view = document.createElement('div');
+  view.className = 'view';
+
+  switch(G.phase) {
+    case 'home':    buildHome(view, hdrAct); break;
+    case 'setup':   buildSetup(view, hdrAct); break;
+    case 'scoring': buildScoring(view, hdrAct); break;
+    case 'final':   buildFinal(view, hdrAct); break;
+    case 'history': buildHistory(view, hdrAct); break;
+  }
+  app.appendChild(view);
+}
+
+// ═══════════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════════
+function buildHome(v, h) {
+  const hasSave = G.active && G.players.length;
+  const hist    = loadHistory();
+  const hasHist = hist.length > 0;
+
+  // Quick S vs B record for home screen teaser
+  const svbGames = hist.filter(g => g.svb);
+  const stacyW   = svbGames.filter(g => g.winner.toLowerCase() === 'stacy').length;
+  const bryanW   = svbGames.filter(g => g.winner.toLowerCase() === 'bryan').length;
+  const svbLine  = svbGames.length > 0
+    ? `<div style="color:rgba(255,255,255,0.4);font-size:0.78rem;margin-top:2px;">Stacy ${stacyW} – ${bryanW} Bryan</div>`
+    : '';
+
+  v.innerHTML = `
+    <div class="home-hero">
+      <div class="emblem">⛳</div>
+      <h1>Play Nine</h1>
+      <p>Scorekeeper</p>
+      ${svbLine}
+    </div>
+    <div class="home-buttons">
+      <button class="btn btn-gold" onclick="goSetup()">🃏 New Game</button>
+      ${hasSave ? `
+        <div class="divider">— or —</div>
+        <button class="btn btn-ghost" onclick="goContinue()">▶ Continue Game · Hole ${G.hole+1}</button>
+      ` : ''}
+      ${hasHist ? `
+        <div class="divider">— or —</div>
+        <button class="btn btn-ghost" onclick="goHistory()">📊 Game History</button>
+      ` : ''}
+    </div>
+  `;
+  v.style.justifyContent = 'center';
+  v.style.minHeight = 'calc(100dvh - 70px)';
+}
+
+// ═══════════════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════════════
+function buildSetup(v, h) {
+  const colors = playerColors();
+  const inputs = Array.from({length: setupCount}, (_, i) => `
+    <div class="name-row">
+      <div class="avatar ${colors[i]}">${i+1}</div>
+      <input class="name-input" type="text" id="nm_${i}"
+        value="${setupNames[i]}" placeholder="Player ${i+1}"
+        oninput="setupNames[${i}]=this.value">
+    </div>
+  `).join('');
+
+  v.innerHTML = `
+    <div class="card">
+      <div class="card-header">Players</div>
+      <div class="card-body">
+        <div class="section-label">How many players?</div>
+        <div class="count-row" style="margin-bottom:0">
+          <button class="cnt-btn" id="dec" onclick="adjCount(-1)">−</button>
+          <div class="cnt-num" id="cnt">${setupCount}</div>
+          <button class="cnt-btn" id="inc" onclick="adjCount(1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Names</div>
+      <div class="card-body">
+        <div class="name-rows">${inputs}</div>
+      </div>
+    </div>
+    <button class="btn btn-gold" onclick="startGame()">⛳ Tee Off</button>
+    <button class="btn btn-ghost" onclick="goHome()" style="color:rgba(255,255,255,0.5);font-size:0.85rem;padding:10px;">← Back</button>
+  `;
+  syncCountBtns();
+}
+
+function adjCount(d) {
+  // read current names first
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById('nm_'+i);
+    if (el) setupNames[i] = el.value;
+  }
+  setupCount = Math.max(2, Math.min(6, setupCount + d));
+  buildSetup(document.querySelector('.view'), document.getElementById('hdr-action'));
+}
+
+function syncCountBtns() {
+  const dec = document.getElementById('dec');
+  const inc = document.getElementById('inc');
+  if (dec) dec.disabled = setupCount <= 2;
+  if (inc) inc.disabled = setupCount >= 6;
+}
+
+// ═══════════════════════════════════════════════
+//  SCORING
+// ═══════════════════════════════════════════════
+function buildScoring(v, h) {
+  initHoleInputs();
+  const holeNum = G.hole + 1;
+  const lead = leaderIdx();
+
+  // Dots
+  const dots = Array.from({length:9}, (_,i) => {
+    let cls = i < G.hole ? 'done' : i === G.hole ? 'now' : '';
+    return `<div class="dot ${cls}"></div>`;
+  }).join('');
+
+  // Player rows
+  const colors = playerColors();
+  const rows = G.players.map((p, i) => {
+    const rt = runningTotal(i, G.hole);
+    const isLead = lead === i && G.hole > 0;
+    return `
+      <div class="player-row">
+        <div class="avatar ${colors[i]}">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="player-meta">
+          <div class="player-name">
+            ${p.name}
+            ${isLead ? '<span class="leader-pip">🏆 Lead</span>' : ''}
+          </div>
+          <div class="player-running">Running total: ${rt}</div>
+        </div>
+        <div class="stepper">
+          <button class="step-btn" onclick="adj(${i},-1)">−</button>
+          <input type="number" class="score-val" id="si_${i}"
+            value="${HI[i]}" min="-5" max="30"
+            oninput="HI[${i}]=parseInt(this.value)||0"
+            onchange="HI[${i}]=parseInt(this.value)||0">
+          <button class="step-btn" onclick="adj(${i},1)">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const canPrev = G.hole > 0;
+  const isLast  = G.hole === 8;
+
+  v.innerHTML = `
+    <div class="hole-hdr">
+      <div>
+        <div class="hole-sub">Current Hole</div>
+        <div class="hole-num">Hole ${holeNum}</div>
+      </div>
+      <div class="hole-dots">${dots}</div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding-top:4px;padding-bottom:4px">${rows}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline btn-sm ${canPrev?'':'hidden'}" onclick="prevHole()">← ${holeNum-1}</button>
+      <button class="btn btn-gold" onclick="nextHole()">${isLast ? '🏁 Finish Game' : 'Hole '+(holeNum+1)+' →'}</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" style="font-size:0.8rem;padding:9px;" onclick="showScorecard()">📋 Scorecard</button>
+      <button class="btn btn-ghost btn-sm" style="font-size:0.8rem;padding:9px;color:#e07070;" onclick="abandonGame()">🗑 Abandon</button>
+    </div>
+  `;
+
+  // Header scorecard button
+  h.innerHTML = `<button class="hdr-btn" onclick="showScorecard()">📋 Card</button>`;
+}
+
+function adj(pi, d) {
+  readInputsFromDOM();
+  HI[pi] = (HI[pi] || 0) + d;
+  const el = document.getElementById('si_'+pi);
+  if (el) el.value = HI[pi];
+}
+
+function nextHole() {
+  readInputsFromDOM();
+  G.players.forEach((p, i) => { p.scores[G.hole] = HI[i]; });
+  if (G.hole === 8) {
+    G.phase = 'final';
+    G.active = false;
+    addGameToHistory();
+    save();
+    render();
+  } else {
+    G.hole++;
+    save();
+    render();
+  }
+}
+
+function prevHole() {
+  if (G.hole > 0) {
+    readInputsFromDOM();
+    G.players.forEach((p, i) => { p.scores[G.hole] = HI[i]; });
+    G.hole--;
+    save();
+    render();
+  }
+}
+
+function abandonGame() {
+  if (confirm('Abandon this game?')) {
+    G = { players:[], hole:0, phase:'home', active:false };
+    localStorage.removeItem('pn_v2');
+    render();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  FINAL
+// ═══════════════════════════════════════════════
+function buildFinal(v, h) {
+  const w = finalWinner();
+  const colors = playerColors();
+
+  const standings = G.players
+    .map((p,i) => ({ name:p.name, total:grandTotal(i), ci:i }))
+    .sort((a,b) => a.total - b.total)
+    .map((r, rank) => {
+      const medals = ['🥇','🥈','🥉'];
+      const medal  = medals[rank] || `${rank+1}.`;
+      return `
+        <div class="standing-row">
+          <div class="standing-rank">${medal}</div>
+          <div class="standing-name ${rank===0?'first':''}">${r.name}</div>
+          <div class="standing-total ${rank===0?'first':''}">${r.total}</div>
+        </div>
+      `;
+    }).join('');
+
+  v.innerHTML = `
+    <div class="winner-banner">
+      <div class="winner-trophy">🏆</div>
+      <div class="winner-label">Winner</div>
+      <div class="winner-name">${w.name}</div>
+      <div class="winner-score">Final Score · ${w.score}</div>
+    </div>
+    <div class="card">
+      <div class="card-header">Final Standings</div>
+      <div class="standings">${standings}</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;" onclick="showScorecard()">📋 Full Card</button>
+      <button class="btn btn-gold" onclick="newGame()">🃏 New Game</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;" onclick="goHistory()">📊 Game History</button>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY SCREEN
+// ═══════════════════════════════════════════════
+function buildHistory(v, h) {
+  const hist    = loadHistory();
+  const svbGames = hist.filter(g => g.svb);
+
+  // H2H stats
+  const stacyW  = svbGames.filter(g => g.winner.toLowerCase() === 'stacy').length;
+  const bryanW  = svbGames.filter(g => g.winner.toLowerCase() === 'bryan').length;
+  const stacyBest = svbGames.length
+    ? Math.min(...svbGames.map(g => g.players.find(p => p.name.toLowerCase()==='stacy')?.total ?? 999))
+    : null;
+  const bryanBest = svbGames.length
+    ? Math.min(...svbGames.map(g => g.players.find(p => p.name.toLowerCase()==='bryan')?.total ?? 999))
+    : null;
+
+  // Win streak (most recent winner repeated)
+  let streak = 0, streakName = '';
+  if (svbGames.length) {
+    streakName = svbGames[0].winner;
+    for (const g of svbGames) {
+      if (g.winner.toLowerCase() === streakName.toLowerCase()) streak++;
+      else break;
+    }
+  }
+
+  const stacyLeads = stacyW > bryanW;
+  const bryanLeads = bryanW > stacyW;
+
+  const h2h = svbGames.length ? `
+    <div class="h2h-banner">
+      <div class="h2h-player">
+        <div class="h2h-name">Stacy</div>
+        <div class="h2h-wins ${stacyLeads?'leader':''}">${stacyW}</div>
+      </div>
+      <div class="h2h-divider">vs</div>
+      <div class="h2h-player">
+        <div class="h2h-name">Bryan</div>
+        <div class="h2h-wins ${bryanLeads?'leader':''}">${bryanW}</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">Stacy Best</div>
+        <div class="stat-val">${stacyBest ?? '—'}</div>
+        <div class="stat-sub">lowest total</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Bryan Best</div>
+        <div class="stat-val">${bryanBest ?? '—'}</div>
+        <div class="stat-sub">lowest total</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Games Played</div>
+        <div class="stat-val">${svbGames.length}</div>
+        <div class="stat-sub">head to head</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Win Streak</div>
+        <div class="stat-val">${streak}</div>
+        <div class="stat-sub">${streak > 1 ? `<span class="streak-badge">🔥 ${streakName}</span>` : streakName || '—'}</div>
+      </div>
+    </div>
+  ` : `
+    <div class="empty-history">
+      <div class="big">🃏</div>
+      No head-to-head games yet.<br>Finish a Stacy vs Bryan game to start tracking!
+    </div>
+  `;
+
+  // Full game log (all games)
+  const gameRows = hist.length ? hist.map(g => {
+    const d    = new Date(g.date);
+    const mon  = d.toLocaleString('default', {month:'short'});
+    const day  = d.getDate();
+    const sorted = [...g.players].sort((a,b)=>a.total-b.total);
+    const scores = sorted.map(p=>`${p.name} ${p.total}`).join(' · ');
+    return `
+      <div class="game-row">
+        <div class="game-date">${mon} ${day}</div>
+        <div class="game-players">
+          <div class="game-winner">🏆 ${g.winner}</div>
+          <div class="game-scores">${scores}</div>
+        </div>
+      </div>
+    `;
+  }).join('') : `<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.85rem;">No games recorded yet.</div>`;
+
+  v.innerHTML = `
+    ${h2h}
+    <div class="card">
+      <div class="card-header">All Games</div>
+      <div class="game-list">${gameRows}</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;color:rgba(255,255,255,0.5);" onclick="goHome()">← Home</button>
+  `;
+
+  h.innerHTML = `<button class="hdr-btn" style="color:#e07070;border-color:rgba(180,60,60,0.4);background:rgba(180,60,60,0.12);" onclick="clearHistory()">Clear</button>`;
+}
+
+function clearHistory() {
+  if (confirm('Delete all game history? This cannot be undone.')) {
+    localStorage.removeItem('pn_history');
+    render();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  SCORECARD MODAL
+// ═══════════════════════════════════════════════
+function showScorecard() {
+  const modal = document.getElementById('sc-modal');
+  const tbl   = document.getElementById('sc-table-data');
+  const w      = G.phase === 'final' ? finalWinner().idx : -1;
+
+  // Header row
+  let th = '<thead><tr><th>Hole</th>';
+  G.players.forEach((p,i) => {
+    th += `<th ${i===w?'class="win-col"':''}>${p.name}</th>`;
+  });
+  th += '</tr></thead>';
+
+  // Hole rows
+  let body = '<tbody>';
+  for (let h = 0; h < 9; h++) {
+    body += `<tr><td>Hole ${h+1}</td>`;
+    G.players.forEach((p, pi) => {
+      const s = p.scores[h];
+      if (s !== null && s !== undefined)
+        body += `<td ${pi===w?'class="win-col"':''}>${s}</td>`;
+      else
+        body += `<td class="no-score">—</td>`;
+    });
+    body += '</tr>';
+  }
+
+  // Totals
+  body += '<tr class="totals-row"><td>Total</td>';
+  G.players.forEach((p, pi) => {
+    const t = p.scores.reduce((a,s) => a + (s??0), 0);
+    body += `<td ${pi===w?'class="win-col"':''}>${t}</td>`;
+  });
+  body += '</tr></tbody>';
+
+  tbl.innerHTML = th + body;
+  modal.classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('sc-modal'))
+    document.getElementById('sc-modal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION HELPERS
+// ═══════════════════════════════════════════════
+function goHome()     { G.phase = 'home';    render(); }
+function goHistory()  { G.phase = 'history'; render(); }
+function goSetup()    { setupCount = 2; setupNames = ['Stacy','Bryan','Player 3','Player 4','Player 5','Player 6']; G.phase = 'setup'; render(); }
+function goContinue() { G.phase = 'scoring'; render(); }
+function newGame()    { G.phase = 'home'; render(); }
+
+function startGame() {
+  // Read any unsaved name inputs
+  for (let i = 0; i < setupCount; i++) {
+    const el = document.getElementById('nm_'+i);
+    if (el) setupNames[i] = el.value.trim() || `Player ${i+1}`;
+  }
+  G.players = Array.from({length:setupCount}, (_,i) => ({
+    name: setupNames[i] || `Player ${i+1}`,
+    scores: Array(9).fill(null)
+  }));
+  G.hole   = 0;
+  G.phase  = 'scoring';
+  G.active = true;
+  save();
+  render();
+}
+
+// ═══════════════════════════════════════════════
+//  PWA
+// ═══════════════════════════════════════════════
+let deferredInstall = null;
+
+function setupPWA() {
+  // Inline manifest via blob
+  const manifest = {
+    name: 'Play Nine',
+    short_name: 'Play Nine',
+    description: 'Play Nine card game scorekeeper',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0f2419',
+    theme_color: '#1a3d2b',
+    icons: [{
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231a3d2b'/%3E%3Ctext x='256' y='380' text-anchor='middle' font-size='340'%3E%E2%9B%B3%3C/text%3E%3C/svg%3E",
+      sizes: 'any',
+      type: 'image/svg+xml',
+      purpose: 'any maskable'
+    }]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+    document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+  } catch(e){}
+
+  // Service Worker via blob (basic offline)
+  if ('serviceWorker' in navigator) {
+    const sw = `
+      const CV='pn-v1';
+      self.addEventListener('install', e => self.skipWaiting());
+      self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.open(CV).then(c =>
+            c.match(e.request).then(r => r || fetch(e.request).then(resp => {
+              c.put(e.request, resp.clone()); return resp;
+            }))
+          ).catch(() => caches.match(e.request))
+        );
+      });
+    `;
+    try {
+      const swBlob = new Blob([sw], {type:'application/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+    } catch(e){}
+  }
+
+  // Install prompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstall = e;
+    document.getElementById('install-banner').classList.add('show');
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('install-banner').classList.remove('show');
+    deferredInstall = null;
+  });
+}
+
+function doInstall() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => {
+      deferredInstall = null;
+      document.getElementById('install-banner').classList.remove('show');
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  setupPWA();
+  const hadSave = load();
+  if (!hadSave || !G.active) {
+    G.phase  = 'home';
+    G.active = false;
+  } else {
+    G.phase = 'home'; // show home with "continue" option
+  }
+  render();
+});
+</script>
+</body>
+</html>
